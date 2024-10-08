@@ -7,7 +7,7 @@ if ("specialzm" in getroottable())
 
 //-----------------------------------------------------------------------------
 
-local ContextFuckingZombies = "[Special Zombie VSCRIPT] by Ky1";
+local ContextFuckingZombies = "[Special Zombie VSCRIPT] by Ky1 + zeThijs";
 ::Entities.EnableEntityListening()
 
 Convars.RegisterConvar("sv_specialzm", "1", "Enable special ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
@@ -22,7 +22,7 @@ Convars.RegisterConvar("sv_specialzm_fast_freq", "15", "Set how often special Fa
 
 Convars.RegisterConvar("sv_specialzm_burn", "1", "Enable special Burn ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_burn_hp", "1400", "Set health of special Burn ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
-Convars.RegisterConvar("sv_specialzm_burn_freq", "25", "Set how often special Burn ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_burn_freq", "20", "Set how often special Burn ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_dog", "1", "Enable special Dog ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_dog_hp", "650", "Set health of special Dog ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
@@ -32,7 +32,7 @@ Convars.RegisterConvar("sv_specialzm_bomb", "1", "Enable special Bomb ZM", FCVAR
 Convars.RegisterConvar("sv_specialzm_bomb_hp", "800", "Set health of special Bomb ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_bomb_freq", "15", "Set how often special Bomb ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
-Convars.RegisterConvar("sv_specialzm_chainsaw", "1", "Enable special Bomb ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_chainsaw", "1", "Enable special Chainsaw ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_chainsaw_hp", "4200", "Set health of special Chainsaw ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special Chainsaw ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
@@ -49,7 +49,7 @@ Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special
 ::health_poisonC <- 1400;
 ::health_fastC <- 1400;
 ::health_burnC <- 1400;
-::health_dogC <- 900;
+::health_dogC <- 650;
 ::health_bombC <- 800;
 ::health_sawC <- 4200;
 
@@ -114,7 +114,8 @@ local dog = "models/dewobedil/zombies/doggy.mdl";
 local bomb = "models/dewobedil/zombies/security_bomb2024.mdl";
 local chainsaw = "models/zombies/chainsaw_man.mdl";
 
-// Make a fucking damage filter for fucking negating fire damage for fucking burned zombies
+
+// Create a damage filter to negate fire damage for "BURN" zombies
 local DMGFILTER_Fire = SpawnEntityFromTable("filter_damage_type",
 { 
     targetname  = "ANTIBURN",
@@ -145,7 +146,7 @@ function ConvertFuckingZombies(entity)
     local chance_burn = RandomInt(1, 1000);
     local chance_dog = RandomInt(1, 1000);
     local chance_bomb = RandomInt(1, 1000);
-    local chance_saw = RandomInt(1, 1000);
+    local chance_saw = RandomInt(1, 2000);
 
     if (!Convars.GetBool("sv_specialzm"))
         return;
@@ -254,9 +255,11 @@ function ConvertFuckingZombies(entity)
     {
         if (chance_bomb <= ::specialzm_bomb_freqC) 
         {
-            // Remove fucking tp to ground flag
-            // 16896 = fade corpse + immune to push
+            // 16896 spawnflag = fade corpse + immune to push
             //entity.__KeyValueFromInt("spawnflags", 16896);
+
+            // Remove fucking tp to ground flag (512 = just fade corpse)
+            entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_bombC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_bombC);
             entity.SetModelOverride(bomb);
@@ -355,8 +358,11 @@ function ConvertFuckingZombies(entity)
     {
         if (chance_saw <= ::specialzm_saw_freqC) 
         {
+            
+            // 16896 spawnflag = fade corpse + immune to push
+
             // Remove fucking tp to ground flag
-            // 16896 = fade corpse + immune to push
+            entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_sawC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_sawC);
             entity.SetModelOverride(chainsaw);
@@ -371,6 +377,7 @@ function ConvertFuckingZombies(entity)
 
             entity.ValidateScriptScope()
             local scope_saw = entity.GetScriptScope()
+
             scope_saw.soundEnabled <- false
             scope_saw.StartChainSoundDeep <- function()
             {
@@ -385,6 +392,7 @@ function ConvertFuckingZombies(entity)
                 chainsound_ent.KeyValueFromString("message", ::SOUNDEFFECT_SAWLOL);
                 EntFireByHandle(chainsound_ent, "PlaySound", "", 0.00, null, null);
             }
+
             scope_saw.chainsound_ent <- null
             scope_saw.StartChainSound <- function()
             {
@@ -400,6 +408,7 @@ function ConvertFuckingZombies(entity)
                 chainsound_ent.KeyValueFromString("message", ::SOUNDEFFECT_SAWLOL);
                 EntFireByHandle(chainsound_ent, "PlaySound", "", 0.00, null, null);
             }
+
             scope_saw.StopChainSound <- function()
             {
                 EntFireByHandle(chainsound_ent, "Kill", "", 5.00, null, null);    
