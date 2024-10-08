@@ -127,6 +127,21 @@ local DMGFILTER_Fire = SpawnEntityFromTable("filter_damage_type",
 
 function ConvertFuckingZombies(entity)
 {
+
+
+    //Is right class?
+    if (!entity.IsNPC() || entity.GetClassname().slice(4,7) != "nmr") //npc_nmrih_
+        return;
+    
+    // fucking skip bosses or important for objective or custom mfs
+    // check name, modelname
+    local modelname = entity.GetModelName()
+    if ( entity.GetName() != "" || modelname == null || modelname.slice(7,10) != "nmr") //models/nmr_zombie/
+        return; //not valid
+
+    else
+        printl("valid")
+
     // Fucking Chances
     local chance_poison = RandomInt(1, 1000);
     local chance_fast = RandomInt(1, 1000);
@@ -138,8 +153,7 @@ function ConvertFuckingZombies(entity)
     if (!Convars.GetBool("sv_specialzm"))
         return;
 
-    if (entity.GetClassname().find("npc_nmrih_", 0) == null)
-        return;
+
 
     if (Convars.GetBool("sv_specialzm_poison"))
     {
