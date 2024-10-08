@@ -355,12 +355,26 @@ function ConvertFuckingZombies(entity)
             entity.SetOrigin(origin);
 
             entity.PrecacheSoundScript(SOUNDEFFECT_SAWLOL)
+            NameRND(entity)
+            AddThinkToEnt(entity, "TurboKillThink");
 
             entity.ValidateScriptScope()
             local scope_saw = entity.GetScriptScope()
+            scope_saw.soundEnabled <- false
+            scope_saw.StartChainSoundDeep <- function()
+            {
+                local entOrigin = self.GetOrigin();
+                entOrigin.z = (entOrigin.z + 20);
 
-
-            /*
+                chainsound_ent = Entities.CreateByClassname("ambient_generic");
+                chainsound_ent.SetOrigin(entOrigin);
+                chainsound_ent.KeyValueFromInt("pitch", 50);
+                chainsound_ent.KeyValueFromInt("spawnflags", 17);
+                chainsound_ent.KeyValueFromInt("health", 7);
+                chainsound_ent.KeyValueFromString("message", ::SOUNDEFFECT_SAWLOL);
+                EntFireByHandle(chainsound_ent, "PlaySound", "", 0.00, null, null);
+            }
+            scope_saw.chainsound_ent <- null
             scope_saw.StartChainSound <- function()
             {
                 local entOrigin = self.GetOrigin();
@@ -368,22 +382,24 @@ function ConvertFuckingZombies(entity)
 
                 chainsound_ent = Entities.CreateByClassname("ambient_fmod");
                 chainsound_ent.SetOrigin(entOrigin);
-                chainsound_ent.KeyValueFromInt("radius", 2000);
-                chainsound_ent.KeyValueFromInt("spawnflags", 17);
-                chainsound_ent.KeyValueFromInt("volume", 7);
-                chainsound_ent.KeyValueFromString("message", SOUNDEFFECT_SAWLOL);
+                chainsound_ent.KeyValueFromInt("radius", 5000);
+                chainsound_ent.KeyValueFromInt("spawnflags", 16);
+                chainsound_ent.KeyValueFromInt("volume", 8);
+                chainsound_ent.KeyValueFromString("SourceEntityName", self.GetName());  //sound automatically gets cleaned up if parent deds
+                chainsound_ent.KeyValueFromString("message", ::SOUNDEFFECT_SAWLOL);
                 EntFireByHandle(chainsound_ent, "PlaySound", "", 0.00, null, null);
-                print("playing shit")
-            } 
-            */
-
-            scope_saw.OnPostSpawn <- function()
+            }
+            scope_saw.StopChainSound <- function()
             {
-                AddThinkToEnt(self, "TurboKillThink");
+                EntFireByHandle(chainsound_ent, "Kill", "", 5.00, null, null);    
             }
 
             scope_saw.TurboKillThink <- function()
             { 
+                if (!soundEnabled){
+                    printl("attemptint to enable sound")
+                    soundEnabled = true
+                    StartChainSound()}
                 local schedule = self.GetSchedule();
                 if (schedule != "SCHED_ZOMBIE_MELEE_ATTACK1")
                 {
@@ -403,12 +419,34 @@ function ConvertFuckingZombies(entity)
 
                 local damage = CreateDamageInfo(self, self, forceVec, Vector(0,0,0), 100000000000, 0)
                 player.TakeDamage(damage)
+
+                return 1.0
             } 
 
             return;
         }
     }
 }
+
+/*
+    Some features require names to function
+    Sets a random name
+*/
+function NameRND(entityhandle)
+{
+    local name = entityhandle.GetName()
+
+    //set random name:
+    local ent = null
+    local rnd = RandomInt(0, 30000)
+    //keep trying until name not exists
+    while( (ent = Entities.FindByName(null, name + rnd.tostring() ) ) != null )
+        rnd = RandomInt(0, 30000)
+
+    name = name + rnd.tostring()
+    entityhandle.SetName(name)
+}
+
 
 //-----------------------------------------------------------------------------
 ::Hooks.Add( getroottable(), "OnEntitySpawned", ConvertFuckingZombies, ContextFuckingZombies)
