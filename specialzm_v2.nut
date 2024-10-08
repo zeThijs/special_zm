@@ -154,7 +154,10 @@ function ConvertFuckingZombies(entity)
             local origin = entity.GetOrigin();
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
+
+            return;
         }
+        
     }
 
     if (Convars.GetBool("sv_specialzm_fast"))
@@ -170,7 +173,10 @@ function ConvertFuckingZombies(entity)
             local origin = entity.GetOrigin();
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
+
+            return;
         }
+        
     }
 
     if (Convars.GetBool("sv_specialzm_burn"))
@@ -209,7 +215,10 @@ function ConvertFuckingZombies(entity)
                     return true;
                 }
             }
+
+            return;
         }
+        
     }
 
     if (Convars.GetBool("sv_specialzm_dog"))
@@ -225,6 +234,8 @@ function ConvertFuckingZombies(entity)
             local origin = entity.GetOrigin();
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
+
+            return;
         }
     }
 
@@ -324,6 +335,8 @@ function ConvertFuckingZombies(entity)
                 EntFireByHandle(env_shake, "StartShake", "", 0.00, null, null);
                 EntFireByHandle(env_shake, "Kill", "", 5.00, null, null);    
             }
+
+            return;
         }
     }
 
@@ -391,6 +404,8 @@ function ConvertFuckingZombies(entity)
                 local damage = CreateDamageInfo(self, self, forceVec, Vector(0,0,0), 100000000000, 0)
                 player.TakeDamage(damage)
             } 
+
+            return;
         }
     }
 }
