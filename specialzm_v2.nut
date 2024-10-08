@@ -139,9 +139,6 @@ function ConvertFuckingZombies(entity)
     if ( entity.GetName() != "" || modelname == null || modelname.slice(7,10) != "nmr") //models/nmr_zombie/
         return; //not valid
 
-    else
-        printl("valid")
-
     // Fucking Chances
     local chance_poison = RandomInt(1, 1000);
     local chance_fast = RandomInt(1, 1000);
