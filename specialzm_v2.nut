@@ -1,6 +1,6 @@
-// Special Zombies by Ky1
+// Special Zombies by Ky1 + zeThijs
 
-printcl(255,255,0,"Special Zombies VSCRIPT [version 1.6] enabled")
+printcl(255,255,0,"Special Zombies VSCRIPT [version 1.8] enabled")
 
 if ("specialzm" in getroottable())
 	return;
@@ -59,7 +59,7 @@ Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special
 ::sv_specialzm_dogC <- 1;
 ::sv_specialzm_bombC <- 1;
 ::sv_specialzm_sawC <- 1;
-::SOUNDEFFECT_BMB <- "PropaneTank.Burst"
+::SOUNDEFFECT_BMB <- "Weapon_TNT.Spark_Loop"
 ::SOUNDEFFECT_SAWLOL <- "Weapon_Chainsaw.IdleLoop"
 
 const z_fixup = 10
@@ -262,6 +262,7 @@ function ConvertFuckingZombies(entity)
             entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_bombC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_bombC);
+            entity.KeyValueFromString("targetname", "bomberman")
             entity.SetModelOverride(bomb);
             // Fix fucking zombie fall through floor
             local origin = entity.GetOrigin();
@@ -273,64 +274,47 @@ function ConvertFuckingZombies(entity)
 
             entity.ValidateScriptScope()
             local scope = entity.GetScriptScope()
- 
+
             scope.fuselit <- 0
+            scope.soundEnabled <- false
+            scope.bombsound_ent <- null
+
             scope.ThinkNPC <- function()
             {
-                //print("think")
-                local nearby = Entities.FindByClassnameNearest("player", self.GetOrigin(), 50) 
-                if ( nearby!= null){
+                local nearby = Entities.FindByClassnameNearest("player", self.GetOrigin(), 65)
+                
+                if (nearby != null) {
                     fuselit = fuselit + 0.5
- 
-                    if (fuselit >= 3)
-                    {
+
+                    // If first detection, set fuselit to 1.3 and play the bomb sound
+                    if (fuselit == 0.5) {
+                        fuselit = 1.3
+                        StartBombSound() // Play bomb sound
+                    }
+
+                    if (fuselit >= 3) {
                         fuselit = 0
                         Explode()
                     }
+                } else {
+                    // Player exited range, reset fuselit and stop bomb sound
+                    if (fuselit > 0) {
+                        fuselit = 0
+                        StopBombSound() // Stop bomb sound when player leaves range
+                    }
                 }
-                else
-                    fuselit = 0
- 
+
                 return 0.5
             }
- 
+
             scope.Explode <- function()
             {
-                //print("exploding")
-                ENVExplosion()
-                SoundEffectFMOD()
-                Shake()
-                entity.SetHealth(0);
-            }
- 
-            scope.ENVExplosion <- function()
-            {
-                local entOrigin = self.GetOrigin();
-                entOrigin.z = (entOrigin.z + 20);
- 
-                local explode = Entities.CreateByClassname("env_explosion");
-                explode.SetOrigin(entOrigin);
- 
-                explode.KeyValueFromInt("iMagnitude", 500);
-                explode.KeyValueFromInt("iRadiusOverride", 350);
-                EntFireByHandle(explode, "Explode", "", 0.00, null, null);
-                EntFireByHandle(explode, "Kill", "", 0.00, null, null); 
-            }
- 
-            scope.SoundEffectFMOD <- function()
-            {
- 
-                local entOrigin = self.GetOrigin();
-                entOrigin.z = (entOrigin.z + 20);
- 
-                local ambient_fmod = Entities.CreateByClassname("ambient_fmod");
-                ambient_fmod.SetOrigin(entOrigin);
-                ambient_fmod.KeyValueFromInt("radius", 2000);
-                ambient_fmod.KeyValueFromInt("spawnflags", 49);
-                ambient_fmod.KeyValueFromInt("volume", 10);
-                ambient_fmod.KeyValueFromString("message", SOUNDEFFECT_BMB);
-                EntFireByHandle(ambient_fmod, "PlaySound", "", 0.00, null, null);
-                EntFireByHandle(ambient_fmod, "Kill", "", 5.00, null, null);    
+                // Print for debugging
+                printl("Explosion triggered")
+                StopBombSound()
+                ENVExplosion()  // Trigger the explosion effects
+                Shake()  // Apply screen shake or other effects
+                EntFireByHandle(entity, "Kill", "", 0.0, null, null)
             }
 
             scope.Shake <- function()
@@ -339,15 +323,52 @@ function ConvertFuckingZombies(entity)
                 local entOrigin = self.GetOrigin();
                 entOrigin.z = (entOrigin.z + 20);
  
-                local env_shake = Entities.CreateByClassname("env_shake");
-                env_shake.SetOrigin(entOrigin);
-                env_shake.KeyValueFromInt("radius", 1250);
-                env_shake.KeyValueFromInt("amplitude", 16);
-                env_shake.KeyValueFromInt("duration", 1);
-                env_shake.KeyValueFromInt("frequency", 3);
-                env_shake.KeyValueFromInt("spawnflags", 24);
-                EntFireByHandle(env_shake, "StartShake", "", 0.00, null, null);
-                EntFireByHandle(env_shake, "Kill", "", 5.00, null, null);    
+                local env_shake_tntzm = Entities.CreateByClassname("env_shake");
+                //env_shake_tntzm.SetName(env_shake_tntzm)
+                env_shake_tntzm.SetOrigin(entOrigin);
+                env_shake_tntzm.KeyValueFromInt("radius", 1250);
+                env_shake_tntzm.KeyValueFromInt("amplitude", 16);
+                env_shake_tntzm.KeyValueFromInt("duration", 1);
+                env_shake_tntzm.KeyValueFromInt("frequency", 3);
+                env_shake_tntzm.KeyValueFromInt("spawnflags", 24);
+                EntFireByHandle(env_shake_tntzm, "StartShake", "", 0.00, null, null);
+                EntFireByHandle(env_shake_tntzm, "Kill", "", 0.00, null, null);    
+            }
+
+            scope.ENVExplosion <- function()
+            {
+                local entOrigin = self.GetOrigin()
+                entOrigin.z = (entOrigin.z + 20)
+
+                local explode_ent_tntzm = Entities.CreateByClassname("env_explosion")
+                //explode_ent_tntzm.SetName(explode_ent_tntzm)
+                explode_ent_tntzm.SetOrigin(entOrigin)
+                explode_ent_tntzm.KeyValueFromInt("iMagnitude", 80)
+                explode_ent_tntzm.KeyValueFromInt("iRadiusOverride", 350)
+                EntFireByHandle(explode_ent_tntzm, "Explode", "", 0.00, null, null)
+                EntFireByHandle(explode_ent_tntzm, "Kill", "", 0.00, null, null)
+            }
+
+            scope.StartBombSound <- function()
+            {
+                local entOrigin = self.GetOrigin()
+                entOrigin.z = (entOrigin.z + 20)
+                bombsound_ent = Entities.CreateByClassname("ambient_fmod")
+                bombsound_ent.KeyValueFromString("parentname", "bomberman")
+                bombsound_ent.SetOrigin(entOrigin)
+                bombsound_ent.KeyValueFromInt("radius", 2000)
+                bombsound_ent.KeyValueFromInt("spawnflags", 17) // was 49
+                bombsound_ent.KeyValueFromInt("volume", 10)
+                bombsound_ent.KeyValueFromString("message", SOUNDEFFECT_BMB)
+                EntFireByHandle(bombsound_ent, "PlaySound", "", 0.00, null, null)
+            }
+
+            scope.StopBombSound <- function()
+            {
+                EntFireByHandle(bombsound_ent, "SetVolume", "0", 0.10, null, null)
+                EntFireByHandle(bombsound_ent, "StopSound", "", 0.20, null, null)
+                EntFireByHandle(bombsound_ent, "Kill", "", 0.30, null, null)
+                printl("killing sound")
             }
 
             return;
@@ -411,7 +432,7 @@ function ConvertFuckingZombies(entity)
 
             scope_saw.StopChainSound <- function()
             {
-                EntFireByHandle(chainsound_ent, "Kill", "", 5.00, null, null);    
+                EntFireByHandle(chainsound_ent, "Kill", "", 0.00, null, null);    
             }
 
             scope_saw.TurboKillThink <- function()
