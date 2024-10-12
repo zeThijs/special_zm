@@ -390,6 +390,7 @@ function ConvertFuckingZombies(entity)
             entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_sawC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_sawC);
+            entity.KeyValueFromString("targetname", "chainsawman")
             entity.SetModelOverride(chainsaw);
             // Fix fucking zombie fall through floor
             local origin = entity.GetOrigin();
@@ -404,19 +405,6 @@ function ConvertFuckingZombies(entity)
             local scope_saw = entity.GetScriptScope()
 
             scope_saw.soundEnabled <- false
-            scope_saw.StartChainSoundDeep <- function()
-            {
-                local entOrigin = self.GetOrigin();
-                entOrigin.z = (entOrigin.z + 20);
-
-                chainsound_ent = Entities.CreateByClassname("ambient_generic");
-                chainsound_ent.SetOrigin(entOrigin);
-                chainsound_ent.KeyValueFromInt("pitch", 50);
-                chainsound_ent.KeyValueFromInt("spawnflags", 17);
-                chainsound_ent.KeyValueFromInt("health", 7);
-                chainsound_ent.KeyValueFromString("message", ::SOUNDEFFECT_SAWLOL);
-                EntFireByHandle(chainsound_ent, "PlaySound", "", 0.00, null, null);
-            }
 
             scope_saw.chainsound_ent <- null
             scope_saw.StartChainSound <- function()
@@ -426,6 +414,7 @@ function ConvertFuckingZombies(entity)
 
                 chainsound_ent = Entities.CreateByClassname("ambient_fmod");
                 chainsound_ent.SetOrigin(entOrigin);
+                chainsound_ent.KeyValueFromString("parentname", "chainsawman")
                 chainsound_ent.KeyValueFromInt("radius", 5000);
                 chainsound_ent.KeyValueFromInt("spawnflags", 16);
                 chainsound_ent.KeyValueFromInt("volume", 8);
@@ -441,32 +430,49 @@ function ConvertFuckingZombies(entity)
 
             scope_saw.TurboKillThink <- function()
             { 
-                if (!soundEnabled){
-                    printl("attemptint to enable sound")
+                if (!soundEnabled) {
+                    printl("attempting to enable sound")
                     soundEnabled = true
-                    StartChainSound()}
+                    StartChainSound()
+                }
+                
                 local schedule = self.GetSchedule();
-                if (schedule != "SCHED_ZOMBIE_MELEE_ATTACK1")
-                {
+                
+                // Check if the current schedule is SCHED_SHOVE_REACT or SCHED_BIG_FLINCH
+                if (schedule == "SCHED_SHOVE_REACT" || schedule == "SCHED_BIG_FLINCH") {
+
+                    // Make zombie immune to flinch/push
+                    self.SetSchedule("SCHED_ZOMBIE_CHASE_ENEMY");
+                }
+
+                // Check if the zombie has passed away (lol)
+                if (!self.IsAlive()) {
+                    StopChainSound(); // Stop the sound if the zombie is not alive
+                    return 1.0; // Exit if the zombie is not alive
+                }
+                
+                if (schedule != "SCHED_ZOMBIE_MELEE_ATTACK1") {
                     return 1.0;
                 }
-                local player =  self.GetEnemy()
 
-                if ( !player.IsPlayer() || !player.IsAlive() )
-                    return 1.0
+                local player = self.GetEnemy();
+                
+                if (!player.IsPlayer() || !player.IsAlive()) {
+                    return 1.0;
+                }
 
-                //create damage info for playerhit by turbo zombie
-                local forceVec = player.GetEyeForward()
-                forceVec.x = forceVec.x * IMPULSEFORCE
-                forceVec.y = forceVec.y * IMPULSEFORCE
-                forceVec.z = forceVec.z * IMPULSEFORCE
-                //inflictor, damager, force applied, dunno, damage, dunno
+                // Create damage info for player hit by turbo zombie
+                local forceVec = player.GetEyeForward();
+                forceVec.x = forceVec.x * IMPULSEFORCE;
+                forceVec.y = forceVec.y * IMPULSEFORCE;
+                forceVec.z = forceVec.z * IMPULSEFORCE;
 
-                local damage = CreateDamageInfo(self, self, forceVec, Vector(0,0,0), 100000000000, 0)
-                player.TakeDamage(damage)
+                // Inflictor, damager, force applied, dunno, damage, dunno
+                local damage = CreateDamageInfo(self, self, forceVec, Vector(0,0,0), 100000000000, 0);
+                player.TakeDamage(damage);
 
-                return 1.0
-            } 
+                return 1.0;
+            }
 
             return;
         }
