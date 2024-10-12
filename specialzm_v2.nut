@@ -129,6 +129,8 @@ local DMGFILTER_Fire = SpawnEntityFromTable("filter_damage_type",
 function ConvertFuckingZombies(entity)
 {
 
+    if (!Convars.GetBool("sv_specialzm"))
+        return;
 
     //Is right class?
     if (!entity.IsNPC() || entity.GetClassname().slice(4,7) != "nmr") //npc_nmrih_
@@ -147,10 +149,6 @@ function ConvertFuckingZombies(entity)
     local chance_dog = RandomInt(1, 1000);
     local chance_bomb = RandomInt(1, 1000);
     local chance_saw = RandomInt(1, 2000);
-
-    if (!Convars.GetBool("sv_specialzm"))
-        return;
-
 
 
     if (Convars.GetBool("sv_specialzm_poison"))
@@ -319,20 +317,21 @@ function ConvertFuckingZombies(entity)
 
             scope.Shake <- function()
             {
- 
+
                 local entOrigin = self.GetOrigin();
                 entOrigin.z = (entOrigin.z + 20);
- 
-                local env_shake_tntzm = Entities.CreateByClassname("env_shake");
-                //env_shake_tntzm.SetName(env_shake_tntzm)
-                env_shake_tntzm.SetOrigin(entOrigin);
-                env_shake_tntzm.KeyValueFromInt("radius", 1250);
-                env_shake_tntzm.KeyValueFromInt("amplitude", 16);
-                env_shake_tntzm.KeyValueFromInt("duration", 1);
-                env_shake_tntzm.KeyValueFromInt("frequency", 3);
-                env_shake_tntzm.KeyValueFromInt("spawnflags", 24);
+
+                local env_shake_tntzm = SpawnEntityFromTable("env_shake",                { 
+                    origin      = entOrigin,
+                    radius      = 1250,
+                    amplitude   = 16,
+                    duration    = 1,
+                    frequency   = 3,
+                    spawnflags  = 24
+                });           
+
                 EntFireByHandle(env_shake_tntzm, "StartShake", "", 0.00, null, null);
-                EntFireByHandle(env_shake_tntzm, "Kill", "", 0.00, null, null);    
+                EntFireByHandle(env_shake_tntzm, "Kill", "", 5.00, null, null);    
             }
 
             scope.ENVExplosion <- function()
@@ -340,27 +339,32 @@ function ConvertFuckingZombies(entity)
                 local entOrigin = self.GetOrigin()
                 entOrigin.z = (entOrigin.z + 20)
 
-                local explode_ent_tntzm = Entities.CreateByClassname("env_explosion")
-                //explode_ent_tntzm.SetName(explode_ent_tntzm)
-                explode_ent_tntzm.SetOrigin(entOrigin)
-                explode_ent_tntzm.KeyValueFromInt("iMagnitude", 80)
-                explode_ent_tntzm.KeyValueFromInt("iRadiusOverride", 350)
+                local explode_ent_tntzm = SpawnEntityFromTable("env_explosion",                { 
+                    origin          = entOrigin,
+                    iRadiusOverride = 350,
+                    amplitude       = 80
+                });       
                 EntFireByHandle(explode_ent_tntzm, "Explode", "", 0.00, null, null)
-                EntFireByHandle(explode_ent_tntzm, "Kill", "", 0.00, null, null)
+                EntFireByHandle(explode_ent_tntzm, "Kill", "", 5.00, null, null)
             }
 
             scope.StartBombSound <- function()
             {
                 local entOrigin = self.GetOrigin()
                 entOrigin.z = (entOrigin.z + 20)
-                bombsound_ent = Entities.CreateByClassname("ambient_fmod")
-                bombsound_ent.KeyValueFromString("parentname", "bomberman")
-                bombsound_ent.SetOrigin(entOrigin)
-                bombsound_ent.KeyValueFromInt("radius", 2000)
-                bombsound_ent.KeyValueFromInt("spawnflags", 17) // was 49
-                bombsound_ent.KeyValueFromInt("volume", 10)
-                bombsound_ent.KeyValueFromString("message", SOUNDEFFECT_BMB)
+
+                local bombsound_ent = SpawnEntityFromTable("ambient_fmod",                { 
+                    parentname = "bomberman",
+                    origin          = entOrigin,
+                    radius = 2000,
+                    spawnflags       = 17,
+                    volume = 10,
+                    message = SOUNDEFFECT_BMB
+
+                });
+
                 EntFireByHandle(bombsound_ent, "PlaySound", "", 0.00, null, null)
+
             }
 
             scope.StopBombSound <- function()
@@ -368,7 +372,7 @@ function ConvertFuckingZombies(entity)
                 EntFireByHandle(bombsound_ent, "SetVolume", "0", 0.10, null, null)
                 EntFireByHandle(bombsound_ent, "StopSound", "", 0.20, null, null)
                 EntFireByHandle(bombsound_ent, "Kill", "", 0.30, null, null)
-                printl("killing sound")
+                // printl("killing sound")
             }
 
             return;
