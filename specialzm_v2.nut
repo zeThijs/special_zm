@@ -312,14 +312,19 @@ function ConvertFuckingZombies(entity)
             entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_bombC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_bombC);
-            entity.KeyValueFromString("targetname", "bomberman")
+
+
+            NameRND(entity, "bomberman")
+
             entity.SetModelOverride(bomb);
+
             // Fix fucking zombie fall through floor
             local origin = entity.GetOrigin();
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
 
             entity.PrecacheSoundScript(SOUNDEFFECT_BMB)
+
             AddThinkToEnt(entity, "ThinkNPC");
 
             entity.ValidateScriptScope()
@@ -397,7 +402,7 @@ function ConvertFuckingZombies(entity)
             entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_sawC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_sawC);
-            entity.KeyValueFromString("targetname", "chainsawman")
+
             entity.SetModelOverride(chainsaw);
             // Fix fucking zombie fall through floor
             local origin = entity.GetOrigin();
@@ -405,7 +410,9 @@ function ConvertFuckingZombies(entity)
             entity.SetOrigin(origin);
 
             entity.PrecacheSoundScript(SOUNDEFFECT_SAWLOL)
-            NameRND(entity)
+
+            NameRND(entity, "chainsawman")
+
             AddThinkToEnt(entity, "TurboKillThink");
 
             entity.ValidateScriptScope()
@@ -421,7 +428,7 @@ function ConvertFuckingZombies(entity)
 
                 chainsound_ent = Entities.CreateByClassname("ambient_fmod");
                 chainsound_ent.SetOrigin(entOrigin);
-                chainsound_ent.KeyValueFromString("parentname", "chainsawman")
+                chainsound_ent.KeyValueFromString("parentname", self.GetName() )
                 chainsound_ent.KeyValueFromInt("radius", 5000);
                 chainsound_ent.KeyValueFromInt("spawnflags", 16);
                 chainsound_ent.KeyValueFromInt("volume", 8);
@@ -490,7 +497,7 @@ function ConvertFuckingZombies(entity)
     Some features require names to function
     Sets a random name
 */
-function NameRND(entityhandle)
+function NameRND(entityhandle, prefix)
 {
     local name = entityhandle.GetName()
 
@@ -498,10 +505,10 @@ function NameRND(entityhandle)
     local ent = null
     local rnd = RandomInt(0, 30000)
     //keep trying until name not exists
-    while( (ent = Entities.FindByName(null, name + rnd.tostring() ) ) != null )
+    while( (ent = Entities.FindByName(null, name + prefix + rnd.tostring() ) ) != null )
         rnd = RandomInt(0, 30000)
 
-    name = name + rnd.tostring()
+    name = name + prefix + rnd.tostring()
     entityhandle.SetName(name)
 }
 
