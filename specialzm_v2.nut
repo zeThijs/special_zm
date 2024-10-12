@@ -59,7 +59,7 @@ Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special
 ::sv_specialzm_dogC <- 1;
 ::sv_specialzm_bombC <- 1;
 ::sv_specialzm_sawC <- 1;
-::SOUNDEFFECT_BMB <- "Weapon_TNT.Spark_Loop"
+::SOUNDEFFECT_BMB <- "Weapon_TNT.Ignite" 
 ::SOUNDEFFECT_SAWLOL <- "Weapon_Chainsaw.IdleLoop"
 
 const z_fixup = 10
@@ -141,6 +141,9 @@ function ConvertFuckingZombies(entity)
     local modelname = entity.GetModelName()
     if ( entity.GetName() != "" || modelname == null || modelname.slice(7,10) != "nmr") //models/nmr_zombie/
         return; //not valid
+
+
+
 
     // Fucking Chances
     local chance_poison = RandomInt(1, 1000);
@@ -323,33 +326,24 @@ function ConvertFuckingZombies(entity)
             local scope = entity.GetScriptScope()
 
             scope.fuselit <- 0
-            scope.soundEnabled <- false
-            scope.bombsound_ent <- null
-
             scope.ThinkNPC <- function()
-            {
-                local nearby = Entities.FindByClassnameNearest("player", self.GetOrigin(), 65)
-                
-                if (nearby != null) {
+            {            
+
+                if (Entities.FindByClassnameNearest("player", self.GetOrigin(), 65) != null) 
+                {
                     fuselit = fuselit + 0.5
 
                     // If first detection, set fuselit to 1.3 and play the bomb sound
                     if (fuselit == 0.5) {
                         fuselit = 1.3
-                        StartBombSound() // Play bomb sound
+                        self.EmitSound("Weapon_TNT.Ignite" )
                     }
 
-                    if (fuselit >= 3) {
-                        fuselit = 0
+                    if (fuselit >= 3)
                         Explode()
-                    }
-                } else {
-                    // Player exited range, reset fuselit and stop bomb sound
-                    if (fuselit > 0) {
-                        fuselit = 0
-                        StopBombSound() // Stop bomb sound when player leaves range
-                    }
-                }
+                } 
+                else // Player exited range, reset fuselit and stop bomb sound
+                    fuselit = 0
 
                 return 0.5
             }
@@ -357,26 +351,23 @@ function ConvertFuckingZombies(entity)
             scope.Explode <- function()
             {
                 // Print for debugging
-                printl("Explosion triggered")
-                StopBombSound()
-                ENVExplosion()  // Trigger the explosion effects
-                Shake()  // Apply screen shake or other effects
-                EntFireByHandle(entity, "Kill", "", 0.0, null, null)
-                DoEntFire("env_shake_bomberman", "Kill", "", 0.00, null, null)
-                DoEntFire("env_explosion_bomberman", "Kill", "", 0.00, null, null)
-                DoEntFire("ambient_fmod_bomberman", "Kill", "", 0.00, null, null)
-            }
-
-            scope.Shake <- function()
-            {
+                // printl("Explosion triggered")
 
                 local entOrigin = self.GetOrigin();
                 entOrigin.z = (entOrigin.z + 20);
 
+                // Trigger the explosion effects
+                //Note: env_explosion will remove it self after 0.3s if  Repeatable  : [2] flag is not set
+                local explode_ent_tntzm = SpawnEntityFromTable("env_explosion",                { 
+                    origin          = entOrigin,
+                    iMagnitude      = 6000, 
+                    iRadiusOverride = 350
+                });       
+                EntFireByHandle(explode_ent_tntzm, "Explode", "", 0.00, null, null)
+
+
                 local env_shake_tntzm = SpawnEntityFromTable("env_shake",                { 
                     origin      = entOrigin,
-                    parentname = "bomberman",
-                    targetname = "env_shake_bomberman",
                     radius      = 1250,
                     amplitude   = 16,
                     duration    = 1,
@@ -384,50 +375,11 @@ function ConvertFuckingZombies(entity)
                     spawnflags  = 24
                 });           
 
-                DoEntFire("env_shake_bomberman", "StartShake", "", 0.00, null, null);
-                DoEntFire("env_shake_bomberman", "Kill", "", 5.00, null, null);    
-            }
-
-            scope.ENVExplosion <- function()
-            {
-                local entOrigin = self.GetOrigin()
-                entOrigin.z = (entOrigin.z + 20)
-
-                local explode_ent_tntzm = SpawnEntityFromTable("env_explosion",                { 
-                    origin          = entOrigin,
-                    parentname = "bomberman",
-                    targetname = "env_explosion_bomberman",
-                    iRadiusOverride = 350,
-                    amplitude       = 80
-                });       
-                DoEntFire("env_explosion_bomberman", "Explode", "", 0.00, null, null)
-                DoEntFire("env_explosion_bomberman", "Kill", "", 0.00, null, null)
-            }
-
-            scope.StartBombSound <- function()
-            {
-                local entOrigin = self.GetOrigin()
-                entOrigin.z = (entOrigin.z + 20)
-
-                local bombsound_ent = SpawnEntityFromTable("ambient_fmod",                { 
-                    parentname = "bomberman",
-                    targetname = "ambient_fmod_bomberman",
-                    origin          = entOrigin,
-                    radius = 2000,
-                    spawnflags       = 17,
-                    volume = 10,
-                    message = SOUNDEFFECT_BMB
-
-                });
-
-                DoEntFire("ambient_fmod_bomberman", "PlaySound", "", 0.00, null, null)
-
-            }
-
-            scope.StopBombSound <- function()
-            {
-                DoEntFire("ambient_fmod_bomberman", "StopSound", "", 0.00, null, null)
-                printl("STOPPING sound")
+                // Apply screen shake or other effects
+                EntFireByHandle(env_shake_tntzm, "StartShake", "", 0.00, null, null);
+                EntFireByHandle(env_shake_tntzm, "Kill", "", 1.00, null, null);    
+     
+                EntFireByHandle(self, "Kill", "", 0.0, null, null)
             }
 
             return;
