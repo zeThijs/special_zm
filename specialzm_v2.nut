@@ -165,7 +165,31 @@ function ConvertFuckingZombies(entity)
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
 
-            return;
+            AddThinkToEnt(entity, "ThinkFixGrab_poison");
+
+            entity.ValidateScriptScope()
+            local scope_poison = entity.GetScriptScope()
+
+            scope_poison.ThinkFixGrab_poison <- function()
+            { 
+                // Schedule manipulation
+                local schedule_poison = self.GetSchedule();
+
+                if (schedule_poison == "SCHED_ZOMBIE_EAT_ENEMY")
+                {
+
+                    // Transform animation from grab to attack because the grab one is bugged (TO DO LIST: fix the actual model)
+                    self.SetSchedule("SCHED_ZOMBIE_MELEE_ATTACK2");
+                    printl("changing schedule to attack")
+                }
+
+                else if (schedule_poison == "SCHED_IDLE_STAND")
+                {
+                    // Switch to chase enemy schedule
+                    self.SetSchedule("SCHED_ZOMBIE_CHASE_ENEMY");
+                    printl("changing schedule to chase enemy");
+                }
+            }
         }
         
     }
@@ -183,6 +207,31 @@ function ConvertFuckingZombies(entity)
             local origin = entity.GetOrigin();
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
+            AddThinkToEnt(entity, "ThinkFixGrab_fast");
+
+            entity.ValidateScriptScope()
+            local scope_fast = entity.GetScriptScope()
+
+            scope_fast.ThinkFixGrab_fast <- function()
+            { 
+                // Schedule manipulation
+                local schedule_fastzm = self.GetSchedule();
+
+                if (schedule_fastzm == "SCHED_ZOMBIE_EAT_ENEMY" || schedule_fastzm == "SCHED_ZOMBIE_GRAB_ENEMY")
+                {
+
+                    // Transform animation from grab to attack because the grab one is bugged (TO DO LIST: fix the actual model)
+                    self.SetSchedule("SCHED_ZOMBIE_MELEE_ATTACK1");
+                    printl("changing schedule to attack")
+                }
+
+                else if (schedule_fastzm == "SCHED_IDLE_STAND")
+                {
+                    // Switch to chase enemy schedule
+                    self.SetSchedule("SCHED_ZOMBIE_CHASE_ENEMY");
+                    printl("changing schedule to chase enemy");
+                }
+            }
 
             return;
         }
@@ -313,6 +362,9 @@ function ConvertFuckingZombies(entity)
                 ENVExplosion()  // Trigger the explosion effects
                 Shake()  // Apply screen shake or other effects
                 EntFireByHandle(entity, "Kill", "", 0.0, null, null)
+                DoEntFire("env_shake_bomberman", "Kill", "", 0.00, null, null)
+                DoEntFire("env_explosion_bomberman", "Kill", "", 0.00, null, null)
+                DoEntFire("ambient_fmod_bomberman", "Kill", "", 0.00, null, null)
             }
 
             scope.Shake <- function()
@@ -323,6 +375,8 @@ function ConvertFuckingZombies(entity)
 
                 local env_shake_tntzm = SpawnEntityFromTable("env_shake",                { 
                     origin      = entOrigin,
+                    parentname = "bomberman",
+                    targetname = "env_shake_bomberman",
                     radius      = 1250,
                     amplitude   = 16,
                     duration    = 1,
@@ -330,8 +384,8 @@ function ConvertFuckingZombies(entity)
                     spawnflags  = 24
                 });           
 
-                EntFireByHandle(env_shake_tntzm, "StartShake", "", 0.00, null, null);
-                EntFireByHandle(env_shake_tntzm, "Kill", "", 5.00, null, null);    
+                DoEntFire("env_shake_bomberman", "StartShake", "", 0.00, null, null);
+                DoEntFire("env_shake_bomberman", "Kill", "", 5.00, null, null);    
             }
 
             scope.ENVExplosion <- function()
@@ -341,11 +395,13 @@ function ConvertFuckingZombies(entity)
 
                 local explode_ent_tntzm = SpawnEntityFromTable("env_explosion",                { 
                     origin          = entOrigin,
+                    parentname = "bomberman",
+                    targetname = "env_explosion_bomberman",
                     iRadiusOverride = 350,
                     amplitude       = 80
                 });       
-                EntFireByHandle(explode_ent_tntzm, "Explode", "", 0.00, null, null)
-                EntFireByHandle(explode_ent_tntzm, "Kill", "", 5.00, null, null)
+                DoEntFire("env_explosion_bomberman", "Explode", "", 0.00, null, null)
+                DoEntFire("env_explosion_bomberman", "Kill", "", 0.00, null, null)
             }
 
             scope.StartBombSound <- function()
@@ -355,6 +411,7 @@ function ConvertFuckingZombies(entity)
 
                 local bombsound_ent = SpawnEntityFromTable("ambient_fmod",                { 
                     parentname = "bomberman",
+                    targetname = "ambient_fmod_bomberman",
                     origin          = entOrigin,
                     radius = 2000,
                     spawnflags       = 17,
@@ -363,16 +420,14 @@ function ConvertFuckingZombies(entity)
 
                 });
 
-                EntFireByHandle(bombsound_ent, "PlaySound", "", 0.00, null, null)
+                DoEntFire("ambient_fmod_bomberman", "PlaySound", "", 0.00, null, null)
 
             }
 
             scope.StopBombSound <- function()
             {
-                EntFireByHandle(bombsound_ent, "SetVolume", "0", 0.10, null, null)
-                EntFireByHandle(bombsound_ent, "StopSound", "", 0.20, null, null)
-                EntFireByHandle(bombsound_ent, "Kill", "", 0.30, null, null)
-                // printl("killing sound")
+                DoEntFire("ambient_fmod_bomberman", "StopSound", "", 0.00, null, null)
+                printl("STOPPING sound")
             }
 
             return;
