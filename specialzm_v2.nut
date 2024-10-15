@@ -13,19 +13,19 @@ local ContextFuckingZombies = "[Special Zombie VSCRIPT] by Ky1 + zeThijs";
 Convars.RegisterConvar("sv_specialzm", "1", "Enable special ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_poison", "1", "Enable special Poison ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
-Convars.RegisterConvar("sv_specialzm_poison_hp", "1400", "Set health of special Poison ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_poison_hp", "600", "Set health of special Poison ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_poison_freq", "25", "Set how often special Poison ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_fast", "1", "Enable special Fast ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
-Convars.RegisterConvar("sv_specialzm_fast_hp", "1400", "Set health of special ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_fast_hp", "600", "Set health of special ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_fast_freq", "15", "Set how often special Fast ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_burn", "1", "Enable special Burn ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
-Convars.RegisterConvar("sv_specialzm_burn_hp", "1400", "Set health of special Burn ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_burn_hp", "600", "Set health of special Burn ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_burn_freq", "20", "Set how often special Burn ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_dog", "1", "Enable special Dog ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
-Convars.RegisterConvar("sv_specialzm_dog_hp", "650", "Set health of special Dog ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_dog_hp", "600", "Set health of special Dog ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_dog_freq", "25", "Set how often special Dog ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_bomb", "1", "Enable special Bomb ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
@@ -33,7 +33,7 @@ Convars.RegisterConvar("sv_specialzm_bomb_hp", "800", "Set health of special Bom
 Convars.RegisterConvar("sv_specialzm_bomb_freq", "15", "Set how often special Bomb ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 Convars.RegisterConvar("sv_specialzm_chainsaw", "1", "Enable special Chainsaw ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
-Convars.RegisterConvar("sv_specialzm_chainsaw_hp", "4200", "Set health of special Chainsaw ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
+Convars.RegisterConvar("sv_specialzm_chainsaw_hp", "3000", "Set health of special Chainsaw ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special Chainsaw ZM spawns", FCVAR_GAMEDLL + FCVAR_NOTIFY);
 
 // Convars.RegisterConvar("sv_specialzm_color", "", "Set the color of special ZM", FCVAR_GAMEDLL + FCVAR_NOTIFY);
@@ -46,12 +46,12 @@ Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special
 ::specialzm_bomb_freqC <- 15;
 ::specialzm_saw_freqC <- 1;
 
-::health_poisonC <- 1400;
-::health_fastC <- 1400;
-::health_burnC <- 1400;
-::health_dogC <- 650;
+::health_poisonC <- 600;
+::health_fastC <- 600;
+::health_burnC <- 600;
+::health_dogC <- 600;
 ::health_bombC <- 800;
-::health_sawC <- 4200;
+::health_sawC <- 3000;
 
 ::sv_specialzm_poisonC <- 1;
 ::sv_specialzm_fastC <- 1;
@@ -59,7 +59,7 @@ Convars.RegisterConvar("sv_specialzm_chainsaw_freq", "1", "Set how often special
 ::sv_specialzm_dogC <- 1;
 ::sv_specialzm_bombC <- 1;
 ::sv_specialzm_sawC <- 1;
-::SOUNDEFFECT_BMB <- "Weapon_TNT.Ignite" 
+::SOUNDEFFECT_BMB <- "Weapon_TNT.Spark_Loop"
 ::SOUNDEFFECT_SAWLOL <- "Weapon_Chainsaw.IdleLoop"
 
 const z_fixup = 10
@@ -142,9 +142,6 @@ function ConvertFuckingZombies(entity)
     if ( entity.GetName() != "" || modelname == null || modelname.slice(7,10) != "nmr") //models/nmr_zombie/
         return; //not valid
 
-
-
-
     // Fucking Chances
     local chance_poison = RandomInt(1, 1000);
     local chance_fast = RandomInt(1, 1000);
@@ -173,14 +170,31 @@ function ConvertFuckingZombies(entity)
             entity.ValidateScriptScope()
             local scope_poison = entity.GetScriptScope()
 
+            scope_poison.forcedattack <- 0
             scope_poison.ThinkFixGrab_poison <- function()
             { 
+                // Weird fix for getting around huge model bbox that prevents it from attacking the player in some cases
+                // Force him to play attack animation when a player is in ~60 range
+                local nearby = Entities.FindByClassnameNearest("player", self.GetOrigin(), 65)
+                
+                if (nearby != null) 
+                {
+
+                    // FORCE ATTACK SCHEDULE IF PLAYER IN RANGE
+                    self.SetSchedule("SCHED_ZOMBIE_MELEE_ATTACK1");
+                    printl("changing attack, player in range")
+                    return 2.0;
+
+                }
+
+                return 0.5
+
                 // Schedule manipulation
                 local schedule_poison = self.GetSchedule();
 
                 if (schedule_poison == "SCHED_ZOMBIE_EAT_ENEMY")
                 {
-
+                    
                     // Transform animation from grab to attack because the grab one is bugged (TO DO LIST: fix the actual model)
                     self.SetSchedule("SCHED_ZOMBIE_MELEE_ATTACK2");
                     printl("changing schedule to attack")
@@ -194,7 +208,6 @@ function ConvertFuckingZombies(entity)
                 }
             }
         }
-        
     }
 
     if (Convars.GetBool("sv_specialzm_fast"))
@@ -312,43 +325,62 @@ function ConvertFuckingZombies(entity)
             entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_bombC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_bombC);
-
-
             NameRND(entity, "bomberman")
-
             entity.SetModelOverride(bomb);
-
             // Fix fucking zombie fall through floor
             local origin = entity.GetOrigin();
             origin.z = origin.z + z_fixup;
             entity.SetOrigin(origin);
 
             entity.PrecacheSoundScript(SOUNDEFFECT_BMB)
-
             AddThinkToEnt(entity, "ThinkNPC");
 
             entity.ValidateScriptScope()
             local scope = entity.GetScriptScope()
 
             scope.fuselit <- 0
-            scope.ThinkNPC <- function()
-            {            
+            scope.soundEnabled <- false
+            scope.bombsound_ent <- null
 
-                if (Entities.FindByClassnameNearest("player", self.GetOrigin(), 65) != null) 
-                {
+            scope.ThinkNPC <- function()
+            {
+
+                // If the NPC is dead, stop the bomb sound and return early to prevent further logic
+                if (!self.IsAlive()) {
+                    fuselit = 0
+                    StopBombSound() // Ensure the bomb sound is stopped when the NPC dies
+                    return 0.5
+                }
+
+                local nearby = Entities.FindByClassnameNearest("player", self.GetOrigin(), 65)
+                
+                if (nearby != null) {
                     fuselit = fuselit + 0.5
 
                     // If first detection, set fuselit to 1.3 and play the bomb sound
                     if (fuselit == 0.5) {
                         fuselit = 1.3
-                        self.EmitSound("Weapon_TNT.Ignite" )
+                        StartBombSound() // Play bomb sound
                     }
 
-                    if (fuselit >= 3)
-                        Explode()
-                } 
-                else // Player exited range, reset fuselit and stop bomb sound
-                    fuselit = 0
+                    if (fuselit >= 3) {
+                        if (self.IsAlive()) {
+                            fuselit = 0
+                            Explode() // Only explode if the entity is alive
+                        } 
+                        else {
+                            // If the entity is dead, reset fuselit but don't explode
+                            fuselit = 0
+                        }
+                    }
+                } else {
+                    // Player exited range, reset fuselit and stop bomb sound
+                    if (fuselit > 0) {
+                        fuselit = 0
+                        StopBombSound() // Stop bomb sound when player leaves range
+                        return 2.0
+                    }
+                }
 
                 return 0.5
             }
@@ -356,23 +388,23 @@ function ConvertFuckingZombies(entity)
             scope.Explode <- function()
             {
                 // Print for debugging
-                // printl("Explosion triggered")
+                printl("Explosion triggered")
+                StopBombSound()
+                ENVExplosion()  // Trigger the explosion effects
+                Shake()  // Apply screen shake or other effects
+                EntFireByHandle(entity, "Kill", "", 0.0, null, null)
+            }
+
+            scope.Shake <- function()
+            {
 
                 local entOrigin = self.GetOrigin();
                 entOrigin.z = (entOrigin.z + 20);
 
-                // Trigger the explosion effects
-                //Note: env_explosion will remove it self after 0.3s if  Repeatable  : [2] flag is not set
-                local explode_ent_tntzm = SpawnEntityFromTable("env_explosion",                { 
-                    origin          = entOrigin,
-                    iMagnitude      = 6000, 
-                    iRadiusOverride = 350
-                });       
-                EntFireByHandle(explode_ent_tntzm, "Explode", "", 0.00, null, null)
-
-
                 local env_shake_tntzm = SpawnEntityFromTable("env_shake",                { 
                     origin      = entOrigin,
+                    parentname = "bomberman",
+                    targetname = "env_shake_bomberman",
                     radius      = 1250,
                     amplitude   = 16,
                     duration    = 1,
@@ -380,11 +412,50 @@ function ConvertFuckingZombies(entity)
                     spawnflags  = 24
                 });           
 
-                // Apply screen shake or other effects
-                EntFireByHandle(env_shake_tntzm, "StartShake", "", 0.00, null, null);
-                EntFireByHandle(env_shake_tntzm, "Kill", "", 1.00, null, null);    
-     
-                EntFireByHandle(self, "Kill", "", 0.0, null, null)
+                DoEntFire("env_shake_bomberman", "StartShake", "", 0.00, null, null);
+                DoEntFire("env_shake_bomberman", "Kill", "", 5.00, null, null);    
+            }
+
+            scope.ENVExplosion <- function()
+            {
+                local entOrigin = self.GetOrigin()
+                entOrigin.z = (entOrigin.z + 20)
+
+                local explode_ent_tntzm = SpawnEntityFromTable("env_explosion",                { 
+                    origin          = entOrigin,
+                    parentname = "bomberman",
+                    targetname = "env_explosion_bomberman",
+                    iRadiusOverride = 350,
+                    iMagnitude       = 80
+                });       
+                DoEntFire("env_explosion_bomberman", "Explode", "", 0.00, null, null)
+                DoEntFire("env_explosion_bomberman", "Kill", "", 1.00, null, null)
+            }
+
+            scope.StartBombSound <- function()
+            {
+                local entOrigin = self.GetOrigin()
+                entOrigin.z = (entOrigin.z + 20)
+
+                local bombsound_ent = SpawnEntityFromTable("ambient_fmod",                { 
+                    parentname = "bomberman",
+                    targetname = "ambient_fmod_bomberman",
+                    origin          = entOrigin,
+                    radius = 2000,
+                    spawnflags       = 17,
+                    volume = 10,
+                    message = SOUNDEFFECT_BMB
+
+                });
+
+                DoEntFire("ambient_fmod_bomberman", "PlaySound", "", 0.00, null, null)
+
+            }
+
+            scope.StopBombSound <- function()
+            {
+                DoEntFire("ambient_fmod_bomberman", "StopSound", "", 0.00, null, null)
+                printl("STOPPING sound")
             }
 
             return;
@@ -402,7 +473,7 @@ function ConvertFuckingZombies(entity)
             entity.__KeyValueFromInt("spawnflags", 512);
             NetProps.SetPropInt(entity, "m_iHealth", ::health_sawC);
             NetProps.SetPropInt(entity, "m_iMaxHealth", ::health_sawC);
-
+            NameRND(entity, "chainsawman")
             entity.SetModelOverride(chainsaw);
             // Fix fucking zombie fall through floor
             local origin = entity.GetOrigin();
@@ -410,9 +481,7 @@ function ConvertFuckingZombies(entity)
             entity.SetOrigin(origin);
 
             entity.PrecacheSoundScript(SOUNDEFFECT_SAWLOL)
-
-            NameRND(entity, "chainsawman")
-
+            NameRND(entity)
             AddThinkToEnt(entity, "TurboKillThink");
 
             entity.ValidateScriptScope()
@@ -428,7 +497,7 @@ function ConvertFuckingZombies(entity)
 
                 chainsound_ent = Entities.CreateByClassname("ambient_fmod");
                 chainsound_ent.SetOrigin(entOrigin);
-                chainsound_ent.KeyValueFromString("parentname", self.GetName() )
+                chainsound_ent.KeyValueFromString("parentname", "chainsawman")
                 chainsound_ent.KeyValueFromInt("radius", 5000);
                 chainsound_ent.KeyValueFromInt("spawnflags", 16);
                 chainsound_ent.KeyValueFromInt("volume", 8);
@@ -497,7 +566,7 @@ function ConvertFuckingZombies(entity)
     Some features require names to function
     Sets a random name
 */
-function NameRND(entityhandle, prefix)
+function NameRND(entityhandle)
 {
     local name = entityhandle.GetName()
 
@@ -505,10 +574,10 @@ function NameRND(entityhandle, prefix)
     local ent = null
     local rnd = RandomInt(0, 30000)
     //keep trying until name not exists
-    while( (ent = Entities.FindByName(null, name + prefix + rnd.tostring() ) ) != null )
+    while( (ent = Entities.FindByName(null, name + rnd.tostring() ) ) != null )
         rnd = RandomInt(0, 30000)
 
-    name = name + prefix + rnd.tostring()
+    name = name + rnd.tostring()
     entityhandle.SetName(name)
 }
 
